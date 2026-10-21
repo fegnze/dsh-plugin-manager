@@ -7,17 +7,17 @@ A read-only **Manage** tab inside DSH's official Plugins page. Find installed bu
 ## Features
 
 - Search names, descriptions, localized metadata, and plugin module names. Whitespace-separated terms match together, across languages.
-- Combine independent source (official/third-party), state (enabled/disabled/problem), and purpose filters.
-- Official-style rounded rows with metadata icons, title and description hierarchy, package name, version, source, inferred purpose and state. Activate a row by mouse or keyboard to open official details.
+- Combine independent maintenance (official/non-official), bundle selection and reported-issue filters. More filters exposes removability, read-only management and package-file availability.
+- Official-style rounded rows with metadata icons, title and description hierarchy, package name, version, maintenance, selection and reported issues. Activate a row by mouse or keyboard to open official details.
 - **Manage** appears between **Installed** and **Discover**.
 - Explicit refresh and refresh after official plugin-manager operations.
 - English and Simplified Chinese UI following the host locale and theme.
 
-Only installed bundles are listed. All installation and runtime facts come from official `pluginManager.listBundles()` and `listPlugins()`. A failed bundle or linked plugin fiber is marked Problem; Enabled means bundle selection, not a claim that every plugin is active. Purposes are local keyword inferences: developer tools, appearance, productivity, model services, MCP integrations, knowledge and Other. They are display aids, not official classifications or a second registry.
+Only installed bundles are listed. All installation and runtime facts come from official `pluginManager.listBundles()` and `listPlugins()`. A failed bundle or linked plugin fiber is marked Problem; Enabled means bundle selection, not a claim that every plugin is active. No purpose is inferred from text. Selection and issues are independent: a selected or unselected bundle can have a reported issue. Metadata diagnostics are not treated as runtime failures; no reported issue is not a health guarantee. Missing optional fields are not guessed.
 
 ## Installation and usage
 
-Build locally with `npm run build`, then install this package directory using DSH's official plugin installer in the **desktop** profile. Open **Plugins → Manage**, type search terms and combine the three selectors. Clear filters resets the view. Activating a row opens the original official bundle page for configuration and management.
+Build locally with `npm run build`, then install this package directory using DSH's official plugin installer in the **desktop** profile. Open **Plugins → Manage**, type search terms and combine factual filters. Clear filters resets the view. Activating a row opens the original official bundle page for configuration and management.
 
 The npm identity is `@fegnze/dsh-plugin-manager`; the project directory and GitHub repository use the short name `dsh-plugin-manager`. Do not install the unrelated unscoped npm package. When migrating a previous local installation, remove the old bundle through the official manager before installing this scoped package; never load both together. Publication status must be verified separately from the manifest metadata.
 

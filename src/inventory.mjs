@@ -1,8 +1,3 @@
-/** Local display categories, not authoritative plugin-manager metadata. */
-export const categories = Object.freeze([
-  'developer', 'appearance', 'productivity', 'model', 'mcp', 'knowledge', 'other',
-]);
-
 const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
 const localeKey = value => String(value).toLowerCase().replaceAll('_', '-');
 const texts = value => typeof value === 'string' ? [value]
@@ -33,7 +28,7 @@ function searchable(item) {
   const values = [];
   const add = record => {
     if (!record) return;
-    values.push(record.name, record.moduleName, record.description,
+    values.push(record.name, record.moduleName, record.description, record.rowId, record.entryId,
       ...texts(record.meta?.title), ...texts(record.meta?.description));
   };
   add(item);
@@ -41,18 +36,6 @@ function searchable(item) {
   for (const plugin of item.plugins || []) add(plugin);
   return values.filter(value => typeof value === 'string').join(' ').toLowerCase();
 }
-
-// Specific protocols/domains precede generic tooling words. English keywords use
-// word boundaries (so "theme" does not match "themedley"); Chinese uses phrases.
-// First matching rule wins; unmatched metadata is explicitly Other.
-const purposeRules = [
-  ['mcp', /\bmcp\b|model context protocol|模型上下文协议/u],
-  ['knowledge', /\b(knowledge|memory|notes?|retrieval|rag)\b|知识|记忆|笔记|检索/u],
-  ['model', /\b(llm|inference|openai|anthropic|ollama|vision)\b|\bmodel[- ](?:provider|service|routing|selection)s?\b|模型(?:服务|供应商|选择|路由)|推理|视觉/u],
-  ['appearance', /\b(themes?|appearance|wallpaper|transparent|typography|fonts?)\b|主题|外观|壁纸|透明|字体/u],
-  ['developer', /\b(developer|development|devtools?|debug(?:ger|ging)?|code|coding|git|terminal|console|openspec)\b|开发|调试|代码|终端/u],
-  ['productivity', /\b(productivity|tasks?|calendar|workflow|automation|clipboard|shortcuts?|launcher|todo)\b|效率|任务|日历|工作流|自动化|剪贴板|快捷/u],
-];
 
 /**
  * Derive a read-only display inventory from official BundleInfo/PluginInfo arrays.
@@ -71,28 +54,47 @@ export function buildInventory(bundles = [], plugins = []) {
     const matched = [...new Map(rows.filter(row => row.plugin)
       .map(row => [row.plugin.entryId, row.plugin])).values()]
       .sort((a, b) => compare(a.entryId, b.entryId));
-    const item = {
+    const issue = Boolean(bundle.error) || matched.some(plugin => plugin.fiberPhase === 'failed');
+    return {
       ...bundle,
       rows,
       plugins: matched,
       source: bundle.official ? 'official' : 'thirdParty',
-      state: bundle.error || matched.some(plugin => plugin.fiberPhase === 'failed')
-        ? 'problem' : bundle.enabled ? 'enabled' : 'disabled',
+      // Keep the legacy derived state for list compatibility; selection is factual.
+      state: issue ? 'problem' : bundle.enabled ? 'enabled' : 'disabled',
+      selectionState: bundle.enabled === true ? 'enabled' : bundle.enabled === false ? 'disabled' : undefined,
+      issue: issue ? 'problem' : 'none',
+      metadataIssue: Boolean(bundle.meta?.error),
     };
-    const haystack = searchable(item);
-    item.category = purposeRules.find(([, rule]) => rule.test(haystack))?.[0] || 'other';
-    return item;
   }).sort((a, b) => compare(a.name, b.name));
 }
 
-/** All independent filters intersect; query tokens AND across every metadata locale. */
-export function filterInventory(items, { query = '', source, state, category } = {}, locale = 'en') {
+/** All independent factual filters intersect; query tokens AND across metadata. */
+export function filterInventory(items, {
+  query = '', source, state, issue, removable, readOnly, availability,
+} = {}, locale = 'en') {
   // Locale selects display text, never which translations are searchable.
   const tokens = String(query || '').trim().toLowerCase().split(/\s+/u).filter(Boolean);
   const accepts = (filter, value) => !filter || filter === 'all' || filter === value;
+  const boolFilter = (filter, value) => {
+    if (!filter || filter === 'all') return true;
+    if (filter === 'yes') return value === true;
+    if (filter === 'no') return value === false;
+    return false;
+  };
+  const availabilityValue = item => item.availability === 'missing' ? 'missing'
+    : ['profile', 'installation'].includes(item.availability) ? 'available' : undefined;
   return items.filter(item => {
-    if (!accepts(source, item.source) || !accepts(state, item.state)
-      || !accepts(category, item.category)) return false;
+    // state is a compatibility field; filtering enabled/disabled is the package fact.
+    const selectionState = item.enabled === true ? 'enabled' : item.enabled === false ? 'disabled' : undefined;
+    const issueValue = item.issue === 'problem' || item.issue === 'none'
+      ? item.issue
+      : Boolean(item.error) || (item.plugins || []).some(plugin => plugin.fiberPhase === 'failed')
+        ? 'problem' : 'none';
+    const readOnlyValue = Boolean(item.readOnlyReason);
+    if (!accepts(source, item.source) || !accepts(state, selectionState)
+      || !accepts(issue, issueValue) || !boolFilter(removable, item.removable)
+      || !boolFilter(readOnly, readOnlyValue) || !accepts(availability, availabilityValue(item))) return false;
     const haystack = `${searchable(item)} ${localized(item.meta?.title, locale).toLowerCase()}`;
     return tokens.every(token => haystack.includes(token));
   });

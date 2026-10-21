@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildInventory, categories, filterInventory, localized } from '../src/inventory.mjs';
+import { buildInventory, filterInventory, localized } from '../src/inventory.mjs';
 
 const bundle = (name, fields = {}) => ({ name, installed: true, enabled: true,
   official: false, rows: [], ...fields });
@@ -85,25 +85,12 @@ test('state follows bundle selection, not active fibers, with failed/error prece
   }
 });
 
-test('purpose rules cover categories, deterministic precedence, and unknown fallback', () => {
-  assert.deepEqual(categories, ['developer', 'appearance', 'productivity', 'model', 'mcp', 'knowledge', 'other']);
-  assert.ok(Object.isFrozen(categories));
-  const cases = [
-    ['dsh-debugger', {}, 'developer'],
-    ['unknown', { meta: { title: { zh: '透明主题' } } }, 'appearance'],
-    ['unknown', { description: 'Calendar and workflow helper' }, 'productivity'],
-    ['unknown', { rows: [{ moduleName: 'ollama-provider' }] }, 'model'],
-    ['unknown', { description: 'MCP model provider' }, 'mcp'],
-    ['unknown', { meta: { description: { ja: 'knowledge retrieval' } } }, 'knowledge'],
-    ['dsh-xyzzy', {}, 'other'],
-    ['dsh-balance-bar', { description: 'Display DeepSeek account balance' }, 'other'],
-    ['dsh-some-tool', { description: 'A DeepSeek Harness plugin' }, 'other'],
-    ['dsh-modlens', { description: 'Plug-in vision for text-only LLMs' }, 'model'],
-    ['themedley', { description: 'memorial equipment' }, 'other'],
-  ];
-  for (const [name, fields, expected] of cases) {
-    assert.equal(buildInventory([bundle(name, fields)])[0].category, expected, name);
-  }
+test('does not infer categories from package text', () => {
+  const [item] = buildInventory([bundle('dsh-debugger', {
+    description: 'MCP model provider and calendar workflow',
+    meta: { title: { zh: '透明主题' } },
+  })]);
+  assert.equal(Object.hasOwn(item, 'category'), false);
 });
 
 test('search ANDs case-insensitive tokens across package, every locale, and matched modules', () => {
@@ -120,30 +107,25 @@ test('search ANDs case-insensitive tokens across package, every locale, and matc
   assert.deepEqual(filterInventory(items, { query: ' \t\n' }), items);
 });
 
-test('source/state/category/query filters intersect for every boundary combination', () => {
+test('factual filters intersect and state remains independent from issue', () => {
   const items = buildInventory([
     bundle('official-code', { official: true }),
-    bundle('third-code'),
-    bundle('disabled-code', { enabled: false }),
-    bundle('problem-code', { rows: [{ entryId: 'bad' }] }),
-    bundle('unknown-package'),
+    bundle('disabled-problem', { enabled: false, error: { code: 'broken' } }),
+    bundle('enabled-problem', { rows: [{ rowId: 'row-bad', entryId: 'bad' }] }),
+    bundle('metadata-only', { meta: { error: { code: 'bad-meta' } } }),
+    bundle('advanced', { removable: true, readOnlyReason: 'managed', availability: 'profile' }),
   ], [plugin('bad', { fiberPhase: 'failed' })]);
-  const original = items.slice();
-  for (const source of [undefined, 'all', 'official', 'thirdParty', 'invalid']) {
-    for (const state of [undefined, 'all', 'enabled', 'disabled', 'problem', 'invalid']) {
-      for (const category of [undefined, 'all', 'developer', 'other', 'invalid']) {
-        for (const query of ['', 'CODE', 'unknown', 'not found']) {
-          const expected = items.filter(item =>
-            (!source || source === 'all' || item.source === source)
-            && (!state || state === 'all' || item.state === state)
-            && (!category || category === 'all' || item.category === category)
-            && query.toLowerCase().split(' ').every(token => item.name.includes(token)));
-          assert.deepEqual(filterInventory(items, { source, state, category, query }), expected);
-        }
-      }
-    }
-  }
-  assert.deepEqual(items, original);
+  assert.deepEqual(filterInventory(items, { state: 'enabled', issue: 'problem' }).map(i => i.name), ['enabled-problem']);
+  assert.deepEqual(filterInventory(items, { state: 'disabled', issue: 'problem' }).map(i => i.name), ['disabled-problem']);
+  assert.deepEqual(filterInventory(items, { issue: 'none' }).map(i => i.name), ['advanced', 'metadata-only', 'official-code']);
+  assert.deepEqual(filterInventory(items, { removable: 'yes', readOnly: 'yes', availability: 'available' }).map(i => i.name), ['advanced']);
+  assert.deepEqual(filterInventory(items, { removable: 'no' }), []);
+  assert.deepEqual(filterInventory(items, { readOnly: 'no' }).map(i => i.name), ['disabled-problem', 'enabled-problem', 'metadata-only', 'official-code']);
+  assert.equal(filterInventory(buildInventory([bundle('shipped', { availability: 'installation' })]), { availability: 'available' }).length, 1);
+  assert.equal(filterInventory(buildInventory([bundle('missing', { availability: 'missing' })]), { availability: 'missing' }).length, 1);
+  assert.equal(filterInventory(buildInventory([bundle('unknown')]), { availability: 'available' }).length, 0);
+  assert.deepEqual(filterInventory(items, { query: 'row-bad bad' }).map(i => i.name), ['enabled-problem']);
+  assert.deepEqual(filterInventory(items, { query: 'unknown' }), []);
   assert.notEqual(filterInventory(items), items);
-  assert.deepEqual(filterInventory([], { query: 'x', category: 'other' }), []);
+  assert.deepEqual(filterInventory([], { query: 'x' }), []);
 });

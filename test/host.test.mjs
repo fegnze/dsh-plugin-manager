@@ -54,6 +54,16 @@ test('scoped manifest and loader identity preserve stable component id', async (
   assert.match(client, /onError: \(\) => setFailed\(true\)/);
 });
 
+test('UI exposes factual independent filters without purpose labels', async () => {
+  const client = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(client, /purposeRules|item\.category|setCategory|用途由|Purpose inferred/);
+  assert.match(client, /source: '维护归属'/);
+  assert.match(client, /state: '启用配置'/);
+  assert.match(client, /select\('issue', issue, setIssue/);
+  assert.match(client, /setIssue\('all'\); setRemovable\('all'\); setReadOnly\('all'\); setAvailability\('all'\)/);
+  assert.match(client, /item.enabled \? 'enabled' : 'disabled'/);
+});
+
 test('runtime has read-only official API boundary and native navigation', async () => {
   const client = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8');
   assert.match(client, /pm\.listBundles\(\)/);
