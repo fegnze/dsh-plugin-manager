@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+<title>Plugin inventory — glass tiles</title>
+<defs>
+  <linearGradient id="body" x1="38" y1="30" x2="218" y2="228" gradientUnits="userSpaceOnUse"><stop stop-color="#00E5FA"/><stop offset=".34" stop-color="#37BDFA"/><stop offset=".61" stop-color="#A2A5FA"/><stop offset=".82" stop-color="#EAC8FA"/><stop offset="1" stop-color="#FFF5F5"/></linearGradient>
+  <linearGradient id="rim" x1="38" y1="30" x2="218" y2="228" gradientUnits="userSpaceOnUse"><stop stop-color="#A3FFFF"/><stop offset=".48" stop-color="#65BFFF"/><stop offset=".78" stop-color="#ECD3FF"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient>
+  <radialGradient id="pearl" cx="0" cy="0" r="1" gradientTransform="translate(186 174) rotate(40) scale(122 108)" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF1FF" stop-opacity=".9"/><stop offset="1" stop-color="#FFF1FF" stop-opacity="0"/></radialGradient>
+  <filter id="soft" x="-15%" y="-15%" width="130%" height="130%"><feGaussianBlur stdDeviation="2"/></filter>
+  <path id="tiles" d="M32 58Q32 32 58 32H92Q116 32 116 58V92Q116 116 92 116H58Q32 116 32 92ZM140 56Q140 32 164 32H198Q224 32 224 58V92Q224 116 198 116H164Q140 116 140 92ZM32 164Q32 140 58 140H92Q116 140 116 164V198Q116 224 92 224H58Q32 224 32 198ZM140 164Q140 140 164 140H198Q224 140 224 164V198Q224 224 198 224H164Q140 224 140 198Z"/>
+</defs>
+<use href="#tiles" fill="url(#body)"/><use href="#tiles" fill="url(#pearl)"/><use href="#tiles" stroke="url(#rim)" stroke-width="2.5"/>
+<path d="M44 79V59Q44 44 60 44H84M152 79V59Q152 44 168 44H192M44 187V167Q44 152 60 152H84" stroke="#E9FFFF" stroke-opacity=".65" stroke-width="5" stroke-linecap="round" filter="url(#soft)"/>
+<path d="m163 182 13 13 24-27" stroke="#A09BDC" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

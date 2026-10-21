@@ -1,0 +1,71 @@
+{
+  "name": "@fegnze/dsh-plugin-manager",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "fegnze",
+  "icon": "./icon.svg",
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fegnze/dsh-plugin-manager.git"
+  },
+  "homepage": "https://github.com/fegnze/dsh-plugin-manager#readme",
+  "bugs": {
+    "url": "https://github.com/fegnze/dsh-plugin-manager/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "type": "module",
+  "description": "Search and filter the DSH plugin inventory using the official plugin manager service",
+  "exports": {
+    ".": "./src/host.mjs",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./icon": "./icon.svg",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "src/host.mjs",
+    "lib/client.js",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md",
+    "docs/zh.md",
+    "locale"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-app-boot": "0.2.0-rc.2 || 0.2.1-rc.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-app-boot": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=22",
+    "dsh": "0.2.0-rc.2 || 0.2.1-rc.2"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "pretest": "npm run build",
+    "test": "node --test test/*.test.mjs"
+  }
+}

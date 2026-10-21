@@ -1,0 +1,11 @@
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import vm from 'node:vm';
+const root = new URL('../', import.meta.url);
+const template = await readFile(new URL('src/client.js', root), 'utf8');
+const model = await readFile(new URL('src/inventory.mjs', root), 'utf8');
+if (model.includes('import ') || !template.includes('/* INVENTORY_MODEL */')) throw new Error('Unsupported build input');
+const output = template.replace('/* INVENTORY_MODEL */', model.replace(/^export /gm, ''));
+new vm.Script(output, { filename: 'client.js' });
+await mkdir(new URL('lib/', root), { recursive: true });
+await writeFile(new URL('lib/client.js', root), output);
+console.log('Built and syntax-checked client bundle.');
